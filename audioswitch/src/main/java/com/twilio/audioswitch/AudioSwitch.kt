@@ -17,6 +17,7 @@ import com.twilio.audioswitch.bluetooth.BluetoothHeadsetConnectionListener
 import com.twilio.audioswitch.bluetooth.BluetoothHeadsetManager
 import com.twilio.audioswitch.wired.WiredDeviceConnectionListener
 import com.twilio.audioswitch.wired.WiredHeadsetReceiver
+import kotlin.reflect.KClass
 
 private const val TAG = "AudioSwitch"
 
@@ -99,6 +100,20 @@ class AudioSwitch {
      * @return the current list of [AudioDevice]s
      */
     val availableAudioDevices: List<AudioDevice> = mutableAudioDevices
+
+    /**
+     * A property to change the devices default priority.
+     * Example:
+     * audioSwitch.audioDevicesPriority = listOf(
+     *              AudioDevice.BluetoothHeadset::class,
+     *              AudioDevice.WiredHeadset::class,
+     *              AudioDevice.Speakerphone::class,
+     *              AudioDevice.Earpiece::class
+     *              )
+     *  will set the priority BluetoothHeadset -> WiredHeadset -> Speakerphone -> Earpiece.
+     *  If an audio device type is not present in the list, that device priority is set to the lowest.
+     */
+    var audioDevicesPriority = listOf<KClass<out AudioDevice>>()
 
     /**
      * Constructs a new AudioSwitch instance.
@@ -271,6 +286,8 @@ class AudioSwitch {
             mutableAudioDevices.add(Speakerphone())
         }
 
+        sortAudioDevices()
+
         logger.d(TAG, "Available AudioDevice list updated: $availableAudioDevices")
 
         // Check whether the user selected device is still present
@@ -308,6 +325,17 @@ class AudioSwitch {
                         selectedDevice)
             } ?: run {
                 listener.invoke(mutableAudioDevices, null)
+            }
+        }
+    }
+
+    private fun sortAudioDevices() {
+        mutableAudioDevices.sortBy {
+            with(audioDevicesPriority.indexOf(it::class)) {
+                when {
+                    this >= 0 -> this
+                    else -> Int.MAX_VALUE
+                }
             }
         }
     }

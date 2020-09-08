@@ -80,6 +80,40 @@ class AudioSwitchTest : BaseTest() {
     }
 
     @Test
+    fun `start should cache the default audio devices and the default selected audio device when priority devices list is not default`() {
+        audioSwitch.audioDevicesPriority = listOf(
+            AudioDevice.BluetoothHeadset::class,
+            AudioDevice.WiredHeadset::class,
+            Speakerphone::class,
+            Earpiece::class
+        )
+
+        audioSwitch.start(audioDeviceChangeListener)
+
+        audioSwitch.availableAudioDevices.let { audioDevices ->
+            assertThat(audioDevices.size, equalTo(2))
+            assertThat(audioDevices[0] is Speakerphone, equalTo(true))
+            assertThat(audioDevices[1] is Earpiece, equalTo(true))
+        }
+        assertThat(audioSwitch.selectedAudioDevice is Speakerphone, equalTo(true))
+    }
+
+    @Test
+    fun `start should cache the default audio devices and the default selected audio device when priority device is not default`() {
+        audioSwitch.audioDevicesPriority = listOf(Speakerphone::class)
+
+        audioSwitch.start(audioDeviceChangeListener)
+
+        audioSwitch.availableAudioDevices.let { audioDevices ->
+            assertThat(audioDevices.size, equalTo(2))
+            assertThat(audioDevices[0]::class.java , equalTo(Speakerphone::class.java))
+            assertThat(audioDevices[0] is Speakerphone, equalTo(true))
+            assertThat(audioDevices[1] is Earpiece, equalTo(true))
+        }
+        assertThat(audioSwitch.selectedAudioDevice is Speakerphone, equalTo(true))
+    }
+
+    @Test
     fun `start should not start the HeadsetManager if it is null`() {
         audioSwitch = AudioSwitch(
             context = context,
